@@ -60,7 +60,7 @@ class Button:
 class GameState:
     def __init__(self):
         self.p1_fighter_skin = 0
-        self.p2_fighter_skin = 0
+        self.p2_fighter_skin = 1
 
 
 class SceneManager:

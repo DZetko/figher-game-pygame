@@ -6,15 +6,15 @@ from core import getFileAdd
 game_backgrounds = [pygame.image.load(getFileAdd(f"assets/background{index}.png")).convert() for index in range(1, 4)]
 
 
-# Character fighter sheets: 1254x1254, 6 cols x 4 rows.
 FIGHTER_FRAME_W = 209
 FIGHTER_FRAME_H = 313
 FIGHTER_DISPLAY_SCALE = 0.6
 
-# state -> (row index, list of column indices to extract as animation frames)
+# state -> (row index - type of movement, column index - segment of movement)
 FIGHTER_STATES = {
     "static": (0, [0, 2, 5]),
     "motion": (2, [0, 2, 5]),
+    "block": (3, [1]),
     "dead": (3, [3, 4, 5]),
 }
 
@@ -37,7 +37,7 @@ def load_fighter_frames(file_path):
 
 
 FIGHTERS = [
-    {"name": "Basic", "frames": load_fighter_frames("assets/basic_fighter.png")},
-    {"name": "Edie", "frames": load_fighter_frames("assets/edie_fighter.png")},
-    {"name": "Kazumi", "frames": load_fighter_frames("assets/kazumi_fighter.png")},
+    {"name": "Basic", "frames": load_fighter_frames("assets/basic_fighter_transparent.png")},
+    {"name": "Edie", "frames": load_fighter_frames("assets/edie_fighter_transparent.png")},
+    {"name": "Kazumi", "frames": load_fighter_frames("assets/kazumi_fighter_transparent.png")},
 ]

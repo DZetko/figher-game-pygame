@@ -20,6 +20,7 @@ from scenes.base import Scene
 
 class FighterBase:
     def __init__(self, x, facing_right, controls, hp_location, fighter_idx):
+        self.is_blocking = False
         self.x = x
         self.y = GROUND_Y
         self.vy = 0
@@ -55,6 +56,9 @@ class FighterBase:
     def handle_input(self, keys):
         if self.is_punching:
             return
+        self.is_blocking = bool(keys[self.controls["block"]])
+        if self.is_blocking:
+            return  # locked in place while blocking
         moved = False
         if keys[self.controls["left"]]:
             self.x -= MOVE_SPEED
@@ -73,6 +77,7 @@ class FighterBase:
     def start_punch(self):
         if self.is_punching or not self.on_ground:
             return
+        self.is_blocking = False
         self.is_punching = True
         self.punch_timer = 0
         self.frame_idx = 0
@@ -100,7 +105,7 @@ class FighterBase:
                 self.frame_idx = 0
 
     def try_hit(self, other):
-        if not self.is_punching or self.has_hit:
+        if not self.is_punching or self.has_hit or other.is_blocking:
             return
         if self.punch_timer < self.punch_duration // 3:
             return
@@ -113,12 +118,17 @@ class FighterBase:
         if self.hp <= 0:
             frames = self.frames[f"dead_{direction}"]
             img = frames[-1]  # freeze on final dead pose
+        elif self.is_blocking:
+            img = self.frames[f"block_{direction}"][0]
         else:
             state = "motion" if self.is_punching else "static"
             frames = self.frames[f"{state}_{direction}"]
             img = frames[self.frame_idx % len(frames)]
         rect = img.get_rect()
-        rect.midbottom = (int(self.x), int(self.y))
+        if self.is_blocking:
+            rect.midbottom = (int(self.x), int(self.y + 20))
+        else:
+            rect.midbottom = (int(self.x), int(self.y))
         surf.blit(img, rect)
 
 
@@ -128,6 +138,7 @@ class Fighter1(FighterBase):
         "right": pygame.K_d,
         "jump": pygame.K_w,
         "punch": pygame.K_f,
+        "block": pygame.K_s
     }
 
     def __init__(self, fighter_idx=0):
@@ -140,10 +151,11 @@ class Fighter2(FighterBase):
         "right": pygame.K_RIGHT,
         "jump": pygame.K_UP,
         "punch": pygame.K_RSHIFT,
+        "block": pygame.K_DOWN
     }
 
     def __init__(self, fighter_idx=0):
-        super().__init__(750, True, self.controls, (GAME_WIDTH - 390, 20), fighter_idx)
+        super().__init__(750, False, self.controls, (GAME_WIDTH - 390, 20), fighter_idx)
 
 
 def draw_hp_bar(surf, location, hp, label):
