@@ -1,85 +1,76 @@
-import os
 import pygame
 
+from core import GAME_HEIGHT, GAME_WIDTH, getFileAdd
+from scenes.base import Scene
 
-pygame.init()
-
-screen = pygame.display.set_mode((1280, 720))
-pygame.display.set_caption("Loading Screen")
-clock = pygame.time.Clock()
-
-names = [
+NAMES = [
     "Michael Minarčík",
     "Daniel Zikmund",
     "Jozef Waldhauser",
-    "Petr Archonax",
+    "Peter Ivan",
 ]
 
-# Délka loadingu 
-duration_ms = 4000
+LOADING_DURATION_MS = 4000
+NAME_CYCLE_MS = 1100
+BLINK_MS = 300
 
-# Načtení obrázku
-current_folder = os.path.dirname(os.path.abspath(__file__))
-image_path = os.path.join(current_folder, "loadscreen.png")
+# Reference layout from the original 1280x720 mockup — kept here so the
+# magic numbers (288, 579, 704, 54) document where the loading bar sits in
+# the background art before we scale it to the game resolution.
+REF_W, REF_H = 1280, 720
+REF_BAR = (288, 579, 704, 54)
 
-background = pygame.image.load(image_path).convert()
-background = pygame.transform.smoothscale(background, (1280, 720))
 
-name_font = pygame.font.SysFont("arial", 34, bold=True)
-loading_font = pygame.font.SysFont("arial", 24, bold=True)
+def _scale_x(value):
+    return round(value / REF_W * GAME_WIDTH)
 
-# Loading bar
-bar_rect = pygame.Rect(288, 579, 704, 54)
 
-start_time = pygame.time.get_ticks()
-running = True
+def _scale_y(value):
+    return round(value / REF_H * GAME_HEIGHT)
 
-while running:
-    current_time = pygame.time.get_ticks()
-    elapsed_time = current_time - start_time
 
-    progress = elapsed_time / duration_ms
-    progress = min(progress, 1)
+class LoadingScene(Scene):
+    def __init__(self, manager):
+        super().__init__(manager)
+        background = pygame.image.load(getFileAdd("assets/loadscreen.png")).convert()
+        self.background = pygame.transform.smoothscale(background, (GAME_WIDTH, GAME_HEIGHT))
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        self.name_font = pygame.font.SysFont("arial", _scale_y(34), bold=True)
+        self.loading_font = pygame.font.SysFont("arial", _scale_y(24), bold=True)
 
-    # Pozadí
-    screen.blit(background, (0, 0))
+        bx, by, bw, bh = REF_BAR
+        self.bar_rect = pygame.Rect(_scale_x(bx), _scale_y(by), _scale_x(bw), _scale_y(bh))
+        self.loading_text_y_offset = _scale_y(35)
 
-    # Vyplnění loading baru
-    fill_width = int(bar_rect.width * progress)
-    fill_rect = pygame.Rect(bar_rect.x, bar_rect.y, fill_width, bar_rect.height)
+        self.start_time = pygame.time.get_ticks()
 
-    pygame.draw.rect(screen, (0, 170, 255), fill_rect)
-    pygame.draw.rect(screen, (255, 255, 255), bar_rect, 2)
+    def update(self):
+        if pygame.time.get_ticks() - self.start_time >= LOADING_DURATION_MS:
+            from scenes.menu import MenuScene
+            self.manager.go_to(MenuScene)
 
-    # Střídání jmen
-    name_index = (elapsed_time // 1100) % len(names)
-    current_name = names[name_index]
+    def draw(self, surf):
+        elapsed = pygame.time.get_ticks() - self.start_time
+        progress = min(1.0, elapsed / LOADING_DURATION_MS)
 
-    # Blikání barvy jména
-    if (elapsed_time // 300) % 2 == 0:
-        name_color = (255, 255, 255)
-    else:
-        name_color = (180, 220, 255)
+        surf.blit(self.background, (0, 0))
 
-    # Vykreslení jména
-    name_surface = name_font.render(current_name, True, name_color)
-    name_rect = name_surface.get_rect(center=bar_rect.center)
-    screen.blit(name_surface, name_rect)
+        fill_w = int(self.bar_rect.width * progress)
+        pygame.draw.rect(
+            surf,
+            (0, 170, 255),
+            (self.bar_rect.x, self.bar_rect.y, fill_w, self.bar_rect.height),
+        )
+        pygame.draw.rect(surf, (255, 255, 255), self.bar_rect, 2)
 
-    # Vykreslení procent
-    loading_text = f"LOADING... {int(progress * 100)}%"
-    loading_surface = loading_font.render(loading_text, True, (240, 240, 240))
-    loading_rect = loading_surface.get_rect(center=(640, bar_rect.bottom + 35))
-    screen.blit(loading_surface, loading_rect)
+        name = NAMES[(elapsed // NAME_CYCLE_MS) % len(NAMES)]
+        name_color = (255, 255, 255) if (elapsed // BLINK_MS) % 2 == 0 else (180, 220, 255)
+        name_surf = self.name_font.render(name, True, name_color)
+        surf.blit(name_surf, name_surf.get_rect(center=self.bar_rect.center))
 
-    pygame.display.flip()
-    clock.tick(60)
-
-    if progress >= 1:
-        running = False
-
-pygame.quit()
+        text = f"LOADING... {int(progress * 100)}%"
+        loading_surf = self.loading_font.render(text, True, (240, 240, 240))
+        surf.blit(
+            loading_surf,
+            loading_surf.get_rect(center=(GAME_WIDTH // 2, self.bar_rect.bottom + self.loading_text_y_offset)),
+        )

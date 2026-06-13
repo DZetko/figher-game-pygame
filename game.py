@@ -1,7 +1,7 @@
 import pygame
 
 from core import FPS, SceneManager, clock, screen
-from scenes.loading import LoadingScene
+from scenes.loading_screen import LoadingScene
 
 
 manager = SceneManager()

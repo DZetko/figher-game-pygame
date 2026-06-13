@@ -23,9 +23,9 @@ class SettingsScene(Scene):
         from scenes.menu import MenuScene
         self.manager.go_to(MenuScene)
 
-    def _cycle(self, attr, direction):
-        idx = getattr(self.manager.state, attr)
-        setattr(self.manager.state, attr, (idx + direction) % len(FIGHTERS))
+    @staticmethod
+    def _wrap(idx, direction):
+        return (idx + direction) % len(FIGHTERS)
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -33,14 +33,15 @@ class SettingsScene(Scene):
             return
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return
+        state = self.manager.state
         if self.p1_left.hit(event.pos):
-            self._cycle("p1_fighter_idx", -1)
+            state.p1_fighter_skin = self._wrap(state.p1_fighter_skin, -1)
         elif self.p1_right.hit(event.pos):
-            self._cycle("p1_fighter_idx", 1)
+            state.p1_fighter_skin = self._wrap(state.p1_fighter_skin, 1)
         elif self.p2_left.hit(event.pos):
-            self._cycle("p2_fighter_idx", -1)
+            state.p2_fighter_skin = self._wrap(state.p2_fighter_skin, -1)
         elif self.p2_right.hit(event.pos):
-            self._cycle("p2_fighter_idx", 1)
+            state.p2_fighter_skin = self._wrap(state.p2_fighter_skin, 1)
         elif self.back_btn.hit(event.pos):
             self._back_to_menu()
 
