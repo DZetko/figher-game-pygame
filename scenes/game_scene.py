@@ -1,0 +1,234 @@
+import random
+
+import pygame
+
+import assets
+from assets import SKIN_FRAMES, base_static_frames
+from core import (
+    FRAME_INDICES,
+    GAME_HEIGHT,
+    GAME_WIDTH,
+    GRAVITY,
+    GROUND_Y,
+    HP_BG,
+    HP_FG,
+    JUMP_V,
+    MOVE_SPEED,
+    SKY,
+    WHITE,
+    hud_font,
+    result_label_font,
+)
+from scenes.base import Scene
+
+
+class FighterBase:
+    def __init__(self, x, facing_right, controls, hp_location, skin_idx):
+        self.x = x
+        self.y = GROUND_Y
+        self.vy = 0
+        self.on_ground = True
+        self.facing_right = facing_right
+        self.controls = controls
+        self.hp_location: tuple[int, int] = hp_location
+        self.skin_idx = skin_idx
+        self.hp = 100
+
+        self.frame_idx = 0
+        self.frame_timer = 0
+        self.frame_delay = 6
+
+        self.is_punching = False
+        self.punch_timer = 0
+        self.punch_duration = 12
+        self.has_hit = False
+
+        self.w = base_static_frames[0].get_width()
+        self.h = base_static_frames[0].get_height()
+
+    def rect(self):
+        return pygame.Rect(self.x - self.w // 2, self.y - self.h, self.w, self.h)
+
+    def hit_rect(self):
+        reach = 60
+        if self.facing_right:
+            return pygame.Rect(self.x + 10, self.y - self.h * 0.7, reach, self.h * 0.4)
+        return pygame.Rect(self.x - 10 - reach, self.y - self.h * 0.7, reach, self.h * 0.4)
+
+    def handle_input(self, keys):
+        if self.is_punching:
+            return
+        moved = False
+        if keys[self.controls["left"]]:
+            self.x -= MOVE_SPEED
+            self.facing_right = False
+            moved = True
+        if keys[self.controls["right"]]:
+            self.x += MOVE_SPEED
+            self.facing_right = True
+            moved = True
+        if keys[self.controls["jump"]] and self.on_ground:
+            self.vy = JUMP_V
+            self.on_ground = False
+        self.x = max(self.w // 2, min(GAME_WIDTH - self.w // 2, self.x))
+        return moved
+
+    def start_punch(self):
+        if self.is_punching or not self.on_ground:
+            return
+        self.is_punching = True
+        self.punch_timer = 0
+        self.frame_idx = 0
+        self.frame_timer = 0
+        self.has_hit = False
+
+    def update(self):
+        if not self.on_ground:
+            self.vy += GRAVITY
+            self.y += self.vy
+            if self.y >= GROUND_Y:
+                self.y = GROUND_Y
+                self.vy = 0
+                self.on_ground = True
+
+        self.frame_timer += 1
+        if self.frame_timer >= self.frame_delay:
+            self.frame_timer = 0
+            self.frame_idx = (self.frame_idx + 1) % len(FRAME_INDICES)
+
+        if self.is_punching:
+            self.punch_timer += 1
+            if self.punch_timer >= self.punch_duration:
+                self.is_punching = False
+                self.frame_idx = 0
+
+    def try_hit(self, other):
+        if not self.is_punching or self.has_hit:
+            return
+        if self.punch_timer < self.punch_duration // 3:
+            return
+        if self.hit_rect().colliderect(other.rect()):
+            other.hp = max(0, other.hp - 8)
+            self.has_hit = True
+
+    def draw(self, surf):
+        frames_set = SKIN_FRAMES[self.skin_idx]
+        if self.is_punching:
+            frames = frames_set["motion_right"] if self.facing_right else frames_set["motion_left"]
+        else:
+            frames = frames_set["static_right"] if self.facing_right else frames_set["static_left"]
+        img = frames[self.frame_idx]
+        rect = img.get_rect()
+        rect.midbottom = (int(self.x), int(self.y))
+        surf.blit(img, rect)
+
+
+class Fighter1(FighterBase):
+    controls = {
+        "left": pygame.K_a,
+        "right": pygame.K_d,
+        "jump": pygame.K_w,
+        "punch": pygame.K_f,
+    }
+
+    def __init__(self, skin_idx=0):
+        super().__init__(250, True, self.controls, (30, 20), skin_idx)
+
+
+class Fighter2(FighterBase):
+    controls = {
+        "left": pygame.K_LEFT,
+        "right": pygame.K_RIGHT,
+        "jump": pygame.K_UP,
+        "punch": pygame.K_RSHIFT,
+    }
+
+    def __init__(self, skin_idx=0):
+        super().__init__(750, True, self.controls, (GAME_WIDTH - 390, 20), skin_idx)
+
+
+def draw_hp_bar(surf, location, hp, label):
+    x, y = location
+    w, h = 360, 18
+    pygame.draw.rect(surf, HP_BG, (x, y, w, h))
+    pygame.draw.rect(surf, HP_FG, (x, y, int(w * hp / 100), h))
+    pygame.draw.rect(surf, WHITE, (x, y, w, h), 2)
+    surf.blit(hud_font.render(f"{label}: {hp}", True, WHITE), (x, y + h + 4))
+
+
+BG_HOLD_MIN_MS = 140
+BG_HOLD_MAX_MS = 320
+
+
+class GameScene(Scene):
+    def __init__(self, manager):
+        super().__init__(manager)
+        self.background_idx = random.randrange(len(assets.game_backgrounds))
+        self.next_bg_swap_at = pygame.time.get_ticks() + self._random_hold()
+        self.reset()
+        self.winner = None
+
+    def reset(self):
+        state = self.manager.state
+        self.p1 = Fighter1(state.p1_skin_idx)
+        self.p2 = Fighter2(state.p2_skin_idx)
+        self.winner = None
+
+    @staticmethod
+    def _random_hold():
+        return random.randint(BG_HOLD_MIN_MS, BG_HOLD_MAX_MS)
+
+    def _advance_background(self):
+        # Pick any other frame than the current to avoid mechanical repeats.
+        choices = [i for i in range(len(assets.game_backgrounds)) if i != self.background_idx]
+        self.background_idx = random.choice(choices)
+        self.next_bg_swap_at = pygame.time.get_ticks() + self._random_hold()
+
+    def _back_to_menu(self):
+        from scenes.menu import MenuScene
+        self.manager.go_to(MenuScene)
+
+    def handle_event(self, event):
+        if event.type != pygame.KEYDOWN:
+            return
+        if event.key == pygame.K_ESCAPE:
+            self._back_to_menu()
+            return
+        if self.winner:
+            if event.key == pygame.K_r:
+                self.reset()
+                self.winner = None
+            return
+        if event.key == Fighter1.controls["punch"]:
+            self.p1.start_punch()
+        elif event.key == Fighter2.controls["punch"]:
+            self.p2.start_punch()
+
+    def update(self):
+        # Crowd keeps cheering even after the match is over.
+        if pygame.time.get_ticks() >= self.next_bg_swap_at:
+            self._advance_background()
+
+        if self.winner:
+            return
+        keys = pygame.key.get_pressed()
+        self.p1.handle_input(keys)
+        self.p2.handle_input(keys)
+        self.p1.update()
+        self.p2.update()
+        self.p1.try_hit(self.p2)
+        self.p2.try_hit(self.p1)
+        if self.p1.hp <= 0:
+            self.winner = "Player 2"
+        elif self.p2.hp <= 0:
+            self.winner = "Player 1"
+
+    def draw(self, surf):
+        surf.blit(assets.game_backgrounds[self.background_idx], (0, 0))
+        self.p1.draw(surf)
+        self.p2.draw(surf)
+        draw_hp_bar(surf, self.p1.hp_location, self.p1.hp, "P1")
+        draw_hp_bar(surf, self.p2.hp_location, self.p2.hp, "P2")
+        if self.winner:
+            label = result_label_font.render(f"{self.winner} WINS! press R to restart", True, WHITE)
+            surf.blit(label, label.get_rect(center=(GAME_WIDTH // 2, GAME_HEIGHT // 2)))
