@@ -155,16 +155,16 @@ def draw_hp_bar(surf, location, hp, label):
     surf.blit(hud_font.render(f"{label}: {hp}", True, WHITE), (x, y + h + 4))
 
 
-BG_HOLD_MS = 220
+BG_CYCLE_AFTER_MILLISECONDS = 220
 
 
 class GameScene(Scene):
     def __init__(self, manager):
         super().__init__(manager)
-        self.background_idx = 0
-        self.next_bg_swap_at = pygame.time.get_ticks() + BG_HOLD_MS
-        self.reset()
         self.winner = None
+        self.background_idx = 0
+        self.next_background_cycle = pygame.time.get_ticks() + BG_CYCLE_AFTER_MILLISECONDS
+        self.reset()
 
     def reset(self):
         state = self.manager.state
@@ -174,7 +174,7 @@ class GameScene(Scene):
 
     def cycle_background(self):
         self.background_idx = (self.background_idx + 1) % len(assets.game_backgrounds)
-        self.next_bg_swap_at = pygame.time.get_ticks() + BG_HOLD_MS
+        self.next_background_cycle = pygame.time.get_ticks() + BG_CYCLE_AFTER_MILLISECONDS
 
     def _back_to_menu(self):
         from scenes.menu import MenuScene
@@ -199,7 +199,7 @@ class GameScene(Scene):
     def update(self):
         if self.winner:
             return
-        if pygame.time.get_ticks() >= self.next_bg_swap_at:
+        if pygame.time.get_ticks() >= self.next_background_cycle:
             self.cycle_background()
 
         keys = pygame.key.get_pressed()
