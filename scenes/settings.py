@@ -1,12 +1,12 @@
 import pygame
 
 from assets import FIGHTERS
-from core import GAME_WIDTH, SKY, WHITE, Button, hud_font, label_font, menu_font, title_font
+from core import GAME_WIDTH, SKY, WHITE, Button, hud_font, label_font, menu_font, title_font, getFileAdd
 from scenes.base import Scene
 
 ARROW_W, ARROW_H = 50, 50
 ARROWS_Y = 420
-
+START_TUNE_PATH = getFileAdd("assets/start_tune.mp3")
 
 class SettingsScene(Scene):
     def __init__(self, manager):

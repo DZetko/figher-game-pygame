@@ -12,10 +12,12 @@ from core import (
     JUMP_V,
     MOVE_SPEED,
     WHITE,
+    getFileAdd,
     hud_font,
     result_label_font,
 )
 from scenes.base import Scene
+from scenes.settings import START_TUNE_PATH
 
 
 class FighterBase:
@@ -169,10 +171,11 @@ def draw_hp_bar(surf, location, hp, label):
 
 BG_CYCLE_AFTER_MILLISECONDS = 220
 
-
 class GameScene(Scene):
     def __init__(self, manager):
         super().__init__(manager)
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
         self.winner = None
         self.background_idx = 0
         self.next_background_cycle = pygame.time.get_ticks() + BG_CYCLE_AFTER_MILLISECONDS
@@ -183,6 +186,8 @@ class GameScene(Scene):
         self.p1 = Fighter1(state.p1_fighter_skin)
         self.p2 = Fighter2(state.p2_fighter_skin)
         self.winner = None
+        pygame.mixer.music.load(START_TUNE_PATH)
+        pygame.mixer.music.play()
 
     def cycle_background(self):
         self.background_idx = (self.background_idx + 1) % len(assets.game_backgrounds)
