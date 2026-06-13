@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 import assets
@@ -18,6 +20,19 @@ from core import (
 )
 from scenes.base import Scene
 from scenes.settings import START_TUNE_PATH
+
+JUMP_SOUND_PATH = getFileAdd("assets/jump.mp3")
+JUMP_SOUND_PROBABILITY = 0.5
+_jump_sound = None
+
+
+def _get_jump_sound():
+    global _jump_sound
+    if _jump_sound is None:
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        _jump_sound = pygame.mixer.Sound(JUMP_SOUND_PATH)
+    return _jump_sound
 
 
 class FighterBase:
@@ -73,6 +88,9 @@ class FighterBase:
         if keys[self.controls["jump"]] and self.on_ground:
             self.vy = JUMP_V
             self.on_ground = False
+            sound = _get_jump_sound()
+            if random.random() < JUMP_SOUND_PROBABILITY and sound.get_num_channels() == 0:
+                sound.play()
         self.x = max(self.w // 2, min(GAME_WIDTH - self.w // 2, self.x))
         return moved
 

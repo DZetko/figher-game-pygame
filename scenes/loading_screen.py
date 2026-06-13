@@ -10,8 +10,8 @@ NAMES = [
     "Peter Ivan",
 ]
 
-LOADING_DURATION_MS = 4000
-NAME_CYCLE_MS = 1100
+LOADING_DURATION_MS = 3200
+NAME_CYCLE_MS = 800
 BLINK_MS = 300
 
 # Reference layout from the original 1280x720 mockup — kept here so the

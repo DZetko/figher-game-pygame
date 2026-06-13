@@ -1,16 +1,21 @@
 import pygame
 
 from assets import FIGHTERS
-from core import GAME_WIDTH, SKY, WHITE, Button, hud_font, label_font, menu_font, title_font, getFileAdd
+from core import GAME_HEIGHT, GAME_WIDTH, WHITE, Button, hud_font, label_font, menu_font, title_font, getFileAdd
 from scenes.base import Scene
 
 ARROW_W, ARROW_H = 50, 50
 ARROWS_Y = 420
 START_TUNE_PATH = getFileAdd("assets/start_tune.mp3")
+JUMP_SOUND_PATH = getFileAdd("assets/jump.mp3")
+JUMP_SOUND_PROBABILITY = 0.5
 
 class SettingsScene(Scene):
     def __init__(self, manager):
         super().__init__(manager)
+        background = pygame.image.load(getFileAdd("assets/menubackground.png")).convert()
+        self.background = pygame.transform.smoothscale(background, (GAME_WIDTH, GAME_HEIGHT))
+
         self.p1_x = GAME_WIDTH // 4
         self.p2_x = 3 * GAME_WIDTH // 4
         self.p1_left = Button((self.p1_x - 110, ARROWS_Y, ARROW_W, ARROW_H), "<")
@@ -57,7 +62,7 @@ class SettingsScene(Scene):
         surf.blit(name_img, name_img.get_rect(center=(x, ARROWS_Y + ARROW_H // 2)))
 
     def draw(self, surf):
-        surf.fill(SKY)
+        surf.blit(self.background, (0, 0))
         title = title_font.render("SETTINGS", True, WHITE)
         surf.blit(title, title.get_rect(center=(GAME_WIDTH // 2, 50)))
 

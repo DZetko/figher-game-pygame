@@ -40,4 +40,5 @@ FIGHTERS = [
     {"name": "Basic", "frames": load_fighter_frames("assets/basic_fighter_transparent.png")},
     {"name": "Edie", "frames": load_fighter_frames("assets/edie_fighter_transparent.png")},
     {"name": "Kazumi", "frames": load_fighter_frames("assets/kazumi_fighter_transparent.png")},
+    {"name": "Peter", "frames": load_fighter_frames("assets/peter_fighter_transparent.png")},
 ]
