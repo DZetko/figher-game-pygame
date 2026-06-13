@@ -39,10 +39,13 @@ FIGHTER_SPRITE_HEIGHT = 280
 FRAME_INDICES = [0, 3, 7]  # we are only using state 1, 4, 8 from the generated sprite sheet
 
 # Game states
+STATE_LOADING = "loading"
 STATE_MENU = "menu"
 STATE_SETTINGS = "settings"
 STATE_PLAYING = "playing"
 STATE_GAME_OVER = "game_over"
+
+LOADING_DURATION_MS = 3000
 
 # start pygame
 pygame.init()
@@ -281,7 +284,8 @@ p2_right_btn = Button((P2_COL_X + 60, ARROWS_Y, ARROW_W, ARROW_H), ">")
 back_btn = Button((GAME_WIDTH // 2 - 100, 510, 200, 50), "BACK")
 
 
-state = STATE_MENU
+state = STATE_LOADING
+loading_started_at = pygame.time.get_ticks()
 p1_skin_idx = 0
 p2_skin_idx = 0
 p1 = None
@@ -296,6 +300,23 @@ def start_new_game():
     p2 = Fighter2(p2_skin_idx)
     winner = None
     state = STATE_PLAYING
+
+
+def draw_loading(surf, elapsed_ms):
+    surf.fill(BLACK)
+    title = title_font.render("TEKKEN", True, WHITE)
+    surf.blit(title, title.get_rect(center=(GAME_WIDTH // 2, GAME_HEIGHT // 2 - 30)))
+
+    bar_w, bar_h = 360, 16
+    bar_x = GAME_WIDTH // 2 - bar_w // 2
+    bar_y = GAME_HEIGHT // 2 + 40
+    progress = min(1.0, elapsed_ms / LOADING_DURATION_MS)
+    pygame.draw.rect(surf, BTN_BG, (bar_x, bar_y, bar_w, bar_h))
+    pygame.draw.rect(surf, HP_FG, (bar_x, bar_y, int(bar_w * progress), bar_h))
+    pygame.draw.rect(surf, WHITE, (bar_x, bar_y, bar_w, bar_h), 2)
+
+    loading_label = label_font.render("Loading...", True, WHITE)
+    surf.blit(loading_label, loading_label.get_rect(center=(GAME_WIDTH // 2, bar_y + 50)))
 
 
 def draw_menu(surf, mouse_pos):
@@ -370,7 +391,9 @@ while running:
             running = False
             continue
 
-        if state == STATE_MENU:
+        if state == STATE_LOADING:
+            pass  # ignore input during loading
+        elif state == STATE_MENU:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 handle_menu_click(event.pos)
         elif state == STATE_SETTINGS:
@@ -394,7 +417,12 @@ while running:
                     state = STATE_MENU
 
     # render
-    if state == STATE_MENU:
+    if state == STATE_LOADING:
+        elapsed_ms = pygame.time.get_ticks() - loading_started_at
+        draw_loading(screen, elapsed_ms)
+        if elapsed_ms >= LOADING_DURATION_MS:
+            state = STATE_MENU
+    elif state == STATE_MENU:
         draw_menu(screen, mouse_pos)
     elif state == STATE_SETTINGS:
         draw_settings(screen, mouse_pos)
