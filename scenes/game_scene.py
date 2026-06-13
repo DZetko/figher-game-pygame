@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 import assets
@@ -156,15 +154,14 @@ def draw_hp_bar(surf, location, hp, label):
     surf.blit(hud_font.render(f"{label}: {hp}", True, WHITE), (x, y + h + 4))
 
 
-BG_HOLD_MIN_MS = 140
-BG_HOLD_MAX_MS = 320
+BG_HOLD_MS = 220
 
 
 class GameScene(Scene):
     def __init__(self, manager):
         super().__init__(manager)
-        self.background_idx = random.randrange(len(assets.game_backgrounds))
-        self.next_bg_swap_at = pygame.time.get_ticks() + self._random_hold()
+        self.background_idx = 0
+        self.next_bg_swap_at = pygame.time.get_ticks() + BG_HOLD_MS
         self.reset()
         self.winner = None
 
@@ -174,15 +171,9 @@ class GameScene(Scene):
         self.p2 = Fighter2(state.p2_skin_idx)
         self.winner = None
 
-    @staticmethod
-    def _random_hold():
-        return random.randint(BG_HOLD_MIN_MS, BG_HOLD_MAX_MS)
-
-    def _advance_background(self):
-        # Pick any other frame than the current to avoid mechanical repeats.
-        choices = [i for i in range(len(assets.game_backgrounds)) if i != self.background_idx]
-        self.background_idx = random.choice(choices)
-        self.next_bg_swap_at = pygame.time.get_ticks() + self._random_hold()
+    def cycle_background(self):
+        self.background_idx = (self.background_idx + 1) % len(assets.game_backgrounds)
+        self.next_bg_swap_at = pygame.time.get_ticks() + BG_HOLD_MS
 
     def _back_to_menu(self):
         from scenes.menu import MenuScene
@@ -205,12 +196,11 @@ class GameScene(Scene):
             self.p2.start_punch()
 
     def update(self):
-        # Crowd keeps cheering even after the match is over.
-        if pygame.time.get_ticks() >= self.next_bg_swap_at:
-            self._advance_background()
-
         if self.winner:
             return
+        if pygame.time.get_ticks() >= self.next_bg_swap_at:
+            self.cycle_background()
+
         keys = pygame.key.get_pressed()
         self.p1.handle_input(keys)
         self.p2.handle_input(keys)
