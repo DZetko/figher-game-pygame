@@ -29,13 +29,6 @@ MOVE_SPEED = 5
 
 GROUND_Y = GAME_HEIGHT - 90
 
-FIGHTER_SCALE = 0.7
-SHEET_FRAME_WIDTH = 192
-STATIC_ROW_Y = 60
-MOTION_ROW_Y = 420
-FIGHTER_SPRITE_HEIGHT = 280
-FRAME_INDICES = [0, 3, 7]
-
 pygame.init()
 screen = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
 pygame.display.set_caption("Tekken")
@@ -66,8 +59,8 @@ class Button:
 
 class GameState:
     def __init__(self):
-        self.p1_skin_idx = 0
-        self.p2_skin_idx = 0
+        self.p1_fighter_skin = 0
+        self.p2_fighter_skin = 0
 
 
 class SceneManager:

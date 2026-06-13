@@ -1,9 +1,8 @@
 import pygame
 
 import assets
-from assets import SKIN_FRAMES, base_static_frames
+from assets import FIGHTERS
 from core import (
-    FRAME_INDICES,
     GAME_HEIGHT,
     GAME_WIDTH,
     GRAVITY,
@@ -12,7 +11,6 @@ from core import (
     HP_FG,
     JUMP_V,
     MOVE_SPEED,
-    SKY,
     WHITE,
     hud_font,
     result_label_font,
@@ -21,7 +19,7 @@ from scenes.base import Scene
 
 
 class FighterBase:
-    def __init__(self, x, facing_right, controls, hp_location, skin_idx):
+    def __init__(self, x, facing_right, controls, hp_location, fighter_idx):
         self.x = x
         self.y = GROUND_Y
         self.vy = 0
@@ -29,7 +27,8 @@ class FighterBase:
         self.facing_right = facing_right
         self.controls = controls
         self.hp_location: tuple[int, int] = hp_location
-        self.skin_idx = skin_idx
+        self.fighter_idx = fighter_idx
+        self.frames = FIGHTERS[fighter_idx]["frames"]
         self.hp = 100
 
         self.frame_idx = 0
@@ -41,8 +40,8 @@ class FighterBase:
         self.punch_duration = 12
         self.has_hit = False
 
-        self.w = base_static_frames[0].get_width()
-        self.h = base_static_frames[0].get_height()
+        self.w = self.frames["static_right"][0].get_width()
+        self.h = self.frames["static_right"][0].get_height()
 
     def rect(self):
         return pygame.Rect(self.x - self.w // 2, self.y - self.h, self.w, self.h)
@@ -92,7 +91,7 @@ class FighterBase:
         self.frame_timer += 1
         if self.frame_timer >= self.frame_delay:
             self.frame_timer = 0
-            self.frame_idx = (self.frame_idx + 1) % len(FRAME_INDICES)
+            self.frame_idx = (self.frame_idx + 1) % len(self.frames["static_right"])
 
         if self.is_punching:
             self.punch_timer += 1
@@ -110,12 +109,14 @@ class FighterBase:
             self.has_hit = True
 
     def draw(self, surf):
-        frames_set = SKIN_FRAMES[self.skin_idx]
-        if self.is_punching:
-            frames = frames_set["motion_right"] if self.facing_right else frames_set["motion_left"]
+        direction = "right" if self.facing_right else "left"
+        if self.hp <= 0:
+            frames = self.frames[f"dead_{direction}"]
+            img = frames[-1]  # freeze on final dead pose
         else:
-            frames = frames_set["static_right"] if self.facing_right else frames_set["static_left"]
-        img = frames[self.frame_idx]
+            state = "motion" if self.is_punching else "static"
+            frames = self.frames[f"{state}_{direction}"]
+            img = frames[self.frame_idx % len(frames)]
         rect = img.get_rect()
         rect.midbottom = (int(self.x), int(self.y))
         surf.blit(img, rect)
@@ -129,8 +130,8 @@ class Fighter1(FighterBase):
         "punch": pygame.K_f,
     }
 
-    def __init__(self, skin_idx=0):
-        super().__init__(250, True, self.controls, (30, 20), skin_idx)
+    def __init__(self, fighter_idx=0):
+        super().__init__(250, True, self.controls, (30, 20), fighter_idx)
 
 
 class Fighter2(FighterBase):
@@ -141,8 +142,8 @@ class Fighter2(FighterBase):
         "punch": pygame.K_RSHIFT,
     }
 
-    def __init__(self, skin_idx=0):
-        super().__init__(750, True, self.controls, (GAME_WIDTH - 390, 20), skin_idx)
+    def __init__(self, fighter_idx=0):
+        super().__init__(750, True, self.controls, (GAME_WIDTH - 390, 20), fighter_idx)
 
 
 def draw_hp_bar(surf, location, hp, label):
@@ -167,8 +168,8 @@ class GameScene(Scene):
 
     def reset(self):
         state = self.manager.state
-        self.p1 = Fighter1(state.p1_skin_idx)
-        self.p2 = Fighter2(state.p2_skin_idx)
+        self.p1 = Fighter1(state.p1_fighter_skin)
+        self.p2 = Fighter2(state.p2_fighter_skin)
         self.winner = None
 
     def cycle_background(self):

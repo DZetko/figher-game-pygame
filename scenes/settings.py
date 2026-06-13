@@ -1,6 +1,6 @@
 import pygame
 
-from assets import SKIN_FRAMES, SKINS
+from assets import FIGHTERS
 from core import GAME_WIDTH, SKY, WHITE, Button, hud_font, label_font, menu_font, title_font
 from scenes.base import Scene
 
@@ -25,7 +25,7 @@ class SettingsScene(Scene):
 
     def _cycle(self, attr, direction):
         idx = getattr(self.manager.state, attr)
-        setattr(self.manager.state, attr, (idx + direction) % len(SKINS))
+        setattr(self.manager.state, attr, (idx + direction) % len(FIGHTERS))
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -34,24 +34,25 @@ class SettingsScene(Scene):
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return
         if self.p1_left.hit(event.pos):
-            self._cycle("p1_skin_idx", -1)
+            self._cycle("p1_fighter_idx", -1)
         elif self.p1_right.hit(event.pos):
-            self._cycle("p1_skin_idx", 1)
+            self._cycle("p1_fighter_idx", 1)
         elif self.p2_left.hit(event.pos):
-            self._cycle("p2_skin_idx", -1)
+            self._cycle("p2_fighter_idx", -1)
         elif self.p2_right.hit(event.pos):
-            self._cycle("p2_skin_idx", 1)
+            self._cycle("p2_fighter_idx", 1)
         elif self.back_btn.hit(event.pos):
             self._back_to_menu()
 
-    def _draw_player_column(self, surf, label, x, skin_idx):
+    def _draw_player_column(self, surf, label, x, fighter_idx):
         label_img = label_font.render(label, True, WHITE)
         surf.blit(label_img, label_img.get_rect(center=(x, 150)))
 
-        preview = SKIN_FRAMES[skin_idx]["static_right"][0]
+        fighter = FIGHTERS[fighter_idx % len(FIGHTERS)]
+        preview = fighter["frames"]["static_right"][0]
         surf.blit(preview, preview.get_rect(center=(x, 290)))
 
-        name_img = hud_font.render(SKINS[skin_idx]["name"], True, WHITE)
+        name_img = hud_font.render(fighter["name"], True, WHITE)
         surf.blit(name_img, name_img.get_rect(center=(x, ARROWS_Y + ARROW_H // 2)))
 
     def draw(self, surf):
@@ -60,8 +61,8 @@ class SettingsScene(Scene):
         surf.blit(title, title.get_rect(center=(GAME_WIDTH // 2, 50)))
 
         state = self.manager.state
-        self._draw_player_column(surf, "Player 1", self.p1_x, state.p1_skin_idx)
-        self._draw_player_column(surf, "Player 2", self.p2_x, state.p2_skin_idx)
+        self._draw_player_column(surf, "Player 1", self.p1_x, state.p1_fighter_skin)
+        self._draw_player_column(surf, "Player 2", self.p2_x, state.p2_fighter_skin)
 
         mouse_pos = pygame.mouse.get_pos()
         self.p1_left.draw(surf, menu_font, mouse_pos)
