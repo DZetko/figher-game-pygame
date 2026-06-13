@@ -47,6 +47,7 @@ class FighterBase:
         self.hp_location: tuple[int, int] = hp_location
         self.fighter_idx = fighter_idx
         self.frames = FIGHTERS[fighter_idx]["frames"]
+        self.motion_offset_y = FIGHTERS[fighter_idx].get("motion_offset_y", 0)
         self.hp = 100
 
         self.frame_idx = 0
@@ -147,6 +148,8 @@ class FighterBase:
         rect = img.get_rect()
         if self.is_blocking:
             rect.midbottom = (int(self.x), int(self.y + 20))
+        elif self.is_punching:
+            rect.midbottom = (int(self.x), int(self.y + self.motion_offset_y))
         else:
             rect.midbottom = (int(self.x), int(self.y))
         surf.blit(img, rect)

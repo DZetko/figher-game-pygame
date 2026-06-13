@@ -37,8 +37,8 @@ def load_fighter_frames(file_path):
 
 
 FIGHTERS = [
-    {"name": "Basic", "frames": load_fighter_frames("assets/basic_fighter_transparent.png")},
-    {"name": "Edie", "frames": load_fighter_frames("assets/edie_fighter_transparent.png")},
-    {"name": "Kazumi", "frames": load_fighter_frames("assets/kazumi_fighter_transparent.png")},
-    {"name": "Peter", "frames": load_fighter_frames("assets/peter_fighter_transparent.png")},
+    {"name": "Basic", "frames": load_fighter_frames("assets/basic_fighter_transparent.png"), "motion_offset_y": 0},
+    {"name": "Edie", "frames": load_fighter_frames("assets/edie_fighter_transparent.png"), "motion_offset_y": 0},
+    {"name": "Kazumi", "frames": load_fighter_frames("assets/kazumi_fighter_transparent.png"), "motion_offset_y": 0},
+    {"name": "Peter", "frames": load_fighter_frames("assets/peter_fighter_transparent.png"), "motion_offset_y": 20},
 ]
